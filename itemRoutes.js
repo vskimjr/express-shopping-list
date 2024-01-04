@@ -55,4 +55,48 @@ router.post("/", function (req, res) {
 
 });
 
+/** Modifies name, price or both of an item on list and returns item */
+
+router.patch("/:name", function (req, res, next) {
+
+  if (req.body === undefined) {
+    throw new BadRequestError('No input data recieved');
+  }
+
+  if (req.body.name === undefined || req.body.price === undefined) {
+    throw new BadRequestError('Name and Price are required fields.');
+  }
+
+  if (!isNumber(req.body.price)) {
+    throw new BadRequestError('Price must be a number.');
+  }
+
+  for (const item of items) {
+    if (item.name === req.params.name) {
+      item.name = req.body.name;
+      item.price = req.body.price;
+      return res.json({ updated: item});
+    }
+  }
+
+  // use next to give 404 if no match for name
+  next();
+});
+
+/** Delete item from list */
+
+router.delete("/:name", function (req, res, next) {
+
+  const itemIdx =  items.findIndex(item => req.params.name === item.name)
+
+  //TODO: Ask about this
+  if (itemIdx === -1){
+    next();
+  } else {
+    items.splice(itemIdx, 1)
+    return res.json({message: "Deleted"});
+  }
+
+})
+
 module.exports = router;
