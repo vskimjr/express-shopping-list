@@ -1,13 +1,13 @@
 "use strict";
 
 const express = require("express");
+const itemRoutes = require("./itemRoutes")
+const { NotFoundError } = require("./expressError");
+
 const app = express();
 
 // process JSON body => req.body
 app.use(express.json());
-
-const itemRoutes = require("./itemRoutes")
-const { NotFoundError } = require("./expressError");
 
 app.use("/items", itemRoutes)
 

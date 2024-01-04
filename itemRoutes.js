@@ -1,3 +1,6 @@
+"use strict";
+
+//TODO: Create a route folder containing all the route files. This will be helpful for larger projects
 
 const express = require("express");
 
@@ -6,6 +9,8 @@ const { BadRequestError } = require("./expressError");
 const { isNumber } = require("lodash");
 
 const router = new express.Router();
+
+//TODO: you can also have a middleware folder and import it from the files in the folder
 
 /** Middleware function to validate json body input */
 
@@ -31,16 +36,19 @@ router.get("/", function (req, res) {
   return res.json({ items });
 });
 
+//TODO: provide data output shapes in the docstring of what exactly you will get back
 /** Return a single shopping item */
 
 router.get("/:name", function (req, res, next) {
-
+  //FIXME: don't use the for loop. Update to findIndex like we did below
   // get first match for input name
   for (const item of items) {
     if (item.name === req.params.name) {
       return res.json(item);
     }
   }
+  //FIXME: We shouldn't need to call next(). We need an additional check.
+  //If there is no item, throw an error. Its always better to be explicit. This should be done first
 
   // use next to give 404 if no match for name
   next();
@@ -61,7 +69,8 @@ router.post("/", validateItemBody, function (req, res) {
   };
   items.push(newItem);
 
-  return res.json({ added: newItem });
+
+  return res.status(201).json({ added: newItem });
 });
 
 /** Modifies name, price or both of an item on list and returns item */
@@ -83,6 +92,7 @@ router.patch("/:name", validateItemBody, function (req, res, next) {
     return res.json({ updated: items[itemIdx] });
   }
 
+  //FIXME: Look above and don't call next(). We need to return something or throw an error
   // use next to give 404 if no match for name
   next();
 });
