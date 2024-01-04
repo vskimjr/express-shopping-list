@@ -7,6 +7,24 @@ const { isNumber } = require("lodash");
 
 const router = new express.Router();
 
+/** Middleware function to validate json body input */
+
+function validateItemBody(req, res, next) {
+  if (req.body === undefined) {
+    throw new BadRequestError('No input data recieved');
+  }
+
+  if (req.body.name === undefined || req.body.price === undefined) {
+    throw new BadRequestError('Name and Price are required fields.');
+  }
+
+  if (!isNumber(req.body.price)) {
+    throw new BadRequestError('Price must be a number.');
+  }
+
+  return next();
+}
+
 /** Returns list of shopping items */
 
 router.get("/", function (req, res) {
@@ -30,19 +48,11 @@ router.get("/:name", function (req, res, next) {
 
 /** Add an item to items and return it */
 
-router.post("/", function (req, res) {
+router.post("/", validateItemBody, function (req, res) {
   console.log('body input for adding item:', req.body);
 
-  if (req.body === undefined) {
-    throw new BadRequestError('No input data recieved');
-  }
-
-  if (req.body.name === undefined || req.body.price === undefined) {
-    throw new BadRequestError('Name and Price are required fields.');
-  }
-
-  if (!isNumber(req.body.price)) {
-    throw new BadRequestError('Price must be a number.');
+  if (items.findIndex(item => item.name === req.body.name) !== -1) {
+    throw new BadRequestError('Item name is already taken.');
   }
 
   const newItem = {
@@ -52,31 +62,25 @@ router.post("/", function (req, res) {
   items.push(newItem);
 
   return res.json({ added: newItem });
-
 });
 
 /** Modifies name, price or both of an item on list and returns item */
 
-router.patch("/:name", function (req, res, next) {
+router.patch("/:name", validateItemBody, function (req, res, next) {
 
-  if (req.body === undefined) {
-    throw new BadRequestError('No input data recieved');
-  }
+  const itemIdx = items.findIndex(item => item.name === req.params.name);
 
-  if (req.body.name === undefined || req.body.price === undefined) {
-    throw new BadRequestError('Name and Price are required fields.');
-  }
+  if (itemIdx !== -1) {
 
-  if (!isNumber(req.body.price)) {
-    throw new BadRequestError('Price must be a number.');
-  }
+    // check for rename, make sure not renaming to taken name
+    if (req.body.name !== req.params.name
+      && items.findIndex(item => item.name === req.body.name) !== -1){
+        throw new BadRequestError('Item name is already taken.');
+      }
 
-  for (const item of items) {
-    if (item.name === req.params.name) {
-      item.name = req.body.name;
-      item.price = req.body.price;
-      return res.json({ updated: item});
-    }
+    items[itemIdx].name = req.body.name;
+    items[itemIdx].price = req.body.price;
+    return res.json({ updated: items[itemIdx] });
   }
 
   // use next to give 404 if no match for name
@@ -87,16 +91,15 @@ router.patch("/:name", function (req, res, next) {
 
 router.delete("/:name", function (req, res, next) {
 
-  const itemIdx =  items.findIndex(item => req.params.name === item.name)
+  const itemIdx = items.findIndex(item => item.name === req.params.name);
 
-  //TODO: Ask about this
-  if (itemIdx === -1){
-    next();
-  } else {
-    items.splice(itemIdx, 1)
-    return res.json({message: "Deleted"});
+  if (itemIdx !== -1) {
+    items.splice(itemIdx, 1);
+    return res.json({ message: "Deleted" });
   }
 
-})
+  // use next to give 404 if no match for name
+  next();
+});
 
 module.exports = router;
